@@ -20,7 +20,6 @@ const serviceUUID = null;
 const scanTimeout = 15000;
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
   final _simplebluePlugin = Simpleblue();
 
   BluetoothDevice? _connectedDevice;
@@ -62,7 +61,6 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Column(children: [
-          Text('Running on: $_platformVersion\n'),
           TextButton(
               child: Text('Scan Devices'),
               onPressed: () {
