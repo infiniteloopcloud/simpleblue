@@ -166,13 +166,16 @@ public class SwiftSimplebluePlugin: NSObject,
         }
     }
     
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    }
+    
     //    CBPeripheralDelegate END
     
     
     // Methods START
     
     private func getDevices(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
-        result(devices.values)
+        result(devices.values.map({ device in convertDeviceToJson(device) }))
     }
     
     private func scanDevices(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
@@ -231,17 +234,17 @@ public class SwiftSimplebluePlugin: NSObject,
     
     private func write(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
         guard let payload = args["data"] as? NSArray else {
-            print("No data to write")
+            result("No data to write")
             return
         }
         
         guard let uuid = args["uuid"] as? String else {
-            print("No uuid passed to write method")
+            result("No uuid passed to write method")
             return
         }
         
         guard let device = devices[uuid] else {
-            print("No device found with uuid (\(uuid))")
+            result("No device found with uuid (\(uuid))")
             return
         }
         
@@ -256,16 +259,13 @@ public class SwiftSimplebluePlugin: NSObject,
         let data = NSData(bytes: rawData, length: payload.count)
         let characteristics = self.characteristics[device.identifier.uuidString]
         
-        if (characteristics?.isEmpty != false) {
-            print("No characteristic found for device (\(uuid))")
+        guard let characteristic = characteristics?[0] else {
+            result("No characteristic found for device (\(uuid))")
             return
         }
-        
-        if (characteristics?.isEmpty == false) {
-            let characteristic = characteristics![0]
             
-            device.writeValue(data as Data, for: characteristic, type: .withResponse)
-        }
+        device.writeValue(data as Data, for: characteristic, type: .withResponse)
+        result(nil)
     }
     
     // Methods END
