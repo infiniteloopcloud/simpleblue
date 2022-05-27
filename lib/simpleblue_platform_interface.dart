@@ -24,7 +24,7 @@ abstract class SimplebluePlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<List<String>> getDevices() {
+  Future<List<BluetoothDevice>> getDevices() {
     throw UnimplementedError('getDevices() has not been implemented.');
   }
 

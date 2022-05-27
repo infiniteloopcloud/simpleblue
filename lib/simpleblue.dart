@@ -3,7 +3,7 @@ import 'package:simpleblue/model/bluetooth_device.dart';
 import 'simpleblue_platform_interface.dart';
 
 class Simpleblue {
-  Future<List<String>> getDevices() {
+  Future<List<BluetoothDevice>> getDevices() {
     return SimplebluePlatform.instance.getDevices();
   }
 

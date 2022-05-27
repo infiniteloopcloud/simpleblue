@@ -14,4 +14,7 @@ class BluetoothDevice {
 
   @override
   int get hashCode => uuid.hashCode;
+
+  @override
+  String toString() => '[$uuid] - $name - ${isConnected ? 'connected' : 'disconnected'}';
 }

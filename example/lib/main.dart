@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:simpleblue/model/bluetooth_device.dart';
 import 'package:simpleblue/simpleblue.dart';
 
@@ -47,11 +45,15 @@ class _MyAppState extends State<MyApp> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: 5000);
+      //_simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: 5000);
     });
+
+    _simplebluePlugin.getDevices().then((value) => setState(() {
+      devices = value;
+    }));
   }
 
-  var devices = <String>[];
+  var devices = <BluetoothDevice>[];
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +73,8 @@ class _MyAppState extends State<MyApp> {
                 stream: _simplebluePlugin.listenDevices(),
                 builder: (_, snap) {
                   final devices = snap.data ?? [];
+
+                  devices.addAll(this.devices);
 
                   return ListView.builder(
                       itemCount: devices.length,

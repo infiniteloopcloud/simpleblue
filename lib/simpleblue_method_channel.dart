@@ -21,7 +21,7 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
 
   MethodChannelSimpleblue() {
     _scanningEventChannel.receiveBroadcastStream().map((event) => event as Map).listen((event) {
-      debugPrint('OnNewPlatformEvent: $event');
+      // debugPrint('OnNewPlatformEvent: $event');
 
       switch (event["type"]) {
         case "scanning":
@@ -70,14 +70,17 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
 
   _onReceivedData(Map data) {
     final device = _deviceFromJson(data["device"] as Map);
+    final payload = data["bytes"] as List;
 
-    _dataStreamControllers[device.uuid]?.add((data["bytes"] as List).map((e) => e as int).toList());
+    print("Received Data: $payload [$device]");
+
+    _dataStreamControllers[device.uuid]?.add((payload).map((e) => e as int).toList());
   }
 
   @override
-  Future<List<String>> getDevices() async {
+  Future<List<BluetoothDevice>> getDevices() async {
     final devices = await methodChannel.invokeMethod<List<dynamic>>('getDevices');
-    return devices?.map((e) => e.toString()).toList() ?? [];
+    return devices?.map((e) => _deviceFromJson(e)).toList() ?? [];
   }
 
   @override
