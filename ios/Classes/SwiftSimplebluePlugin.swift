@@ -129,6 +129,8 @@ public class SwiftSimplebluePlugin: NSObject,
     
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         service.characteristics?.forEach({ characteristic in
+            peripheral.setNotifyValue(true, for: characteristic)
+            
             peripheral.discoverDescriptors(for: characteristic)
         })
         
@@ -141,6 +143,11 @@ public class SwiftSimplebluePlugin: NSObject,
         }
     }
     
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+        print("didUpdateNotificationsStateFor: \(characteristic)\nError: \(error)")
+    }
+    
+    
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
         if (characteristic.descriptors?.isEmpty == false) {
             var descs = descriptors[characteristic.uuid.uuidString] ?? []
@@ -152,9 +159,16 @@ public class SwiftSimplebluePlugin: NSObject,
     }
     
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        
+    }
+    
+    
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         if let value = characteristic.value {
             var array = Array<UInt8>(repeating: 0, count: value.count/MemoryLayout<UInt8>.stride)
             _ = array.withUnsafeMutableBytes { value.copyBytes(to: $0) }
+            
+            print("  <<< \(array) \(characteristic)")
             
             eventSink?([
                 "type": "data",
@@ -166,7 +180,8 @@ public class SwiftSimplebluePlugin: NSObject,
         }
     }
     
-    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
+        // to do nothing
     }
     
     //    CBPeripheralDelegate END
@@ -257,14 +272,27 @@ public class SwiftSimplebluePlugin: NSObject,
         }
         
         let data = NSData(bytes: rawData, length: payload.count)
+        
+        
+        var array = Array<UInt8>(repeating: 0, count: data.count/MemoryLayout<UInt8>.stride)
+        _ = array.withUnsafeMutableBytes { data.copyBytes(to: $0) }
+        print(">>>   \(array)")
+        
+        
         let characteristics = self.characteristics[device.identifier.uuidString]
         
-        guard let characteristic = characteristics?[0] else {
-            result("No characteristic found for device (\(uuid))")
-            return
-        }
+        characteristics?.forEach({ c in
             
-        device.writeValue(data as Data, for: characteristic, type: .withResponse)
+            device.writeValue(data as Data, for: c, type: .withResponse)
+            
+        })
+        
+//        guard let characteristic = characteristics?.first(where: { c in c.properties.rawValue == 0x10 }) else {
+//            result("No characteristic found for device (\(uuid))")
+//            return
+//        }
+//
+//        device.writeValue(data as Data, for: characteristic, type: .withResponse)
         result(nil)
     }
     
