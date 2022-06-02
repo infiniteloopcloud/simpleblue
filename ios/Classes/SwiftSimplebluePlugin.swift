@@ -20,6 +20,8 @@ public class SwiftSimplebluePlugin: NSObject,
         instance.initBluetooth()
     }
     
+    let debugLog = true
+    
     var cb: CBCentralManager?
     var devices: [String : CBPeripheral] = [:]
     var characteristics: [String : [CBCharacteristic]] = [:]
@@ -144,7 +146,7 @@ public class SwiftSimplebluePlugin: NSObject,
     }
     
     public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        print("didUpdateNotificationsStateFor: \(characteristic)\nError: \(error)")
+        debugPrint("didUpdateNotificationsStateFor: \(characteristic)\nError: \(error)")
     }
     
     
@@ -159,16 +161,18 @@ public class SwiftSimplebluePlugin: NSObject,
     }
     
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        
+        debugPrint("didWriteValueFor \(characteristic)")
     }
     
     
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        debugPrint("didUpdateValueFor \(characteristic)")
+        
         if let value = characteristic.value {
             var array = Array<UInt8>(repeating: 0, count: value.count/MemoryLayout<UInt8>.stride)
             _ = array.withUnsafeMutableBytes { value.copyBytes(to: $0) }
             
-            print("  <<< \(array) \(characteristic)")
+            debugPrint("  <<< \(array) \(characteristic)")
             
             eventSink?([
                 "type": "data",
@@ -179,6 +183,7 @@ public class SwiftSimplebluePlugin: NSObject,
             ])
         }
     }
+
     
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
         // to do nothing
@@ -221,7 +226,7 @@ public class SwiftSimplebluePlugin: NSObject,
             cb.scanForPeripherals(withServices: cbuuids)
             
             let timeout = (args["timeout"] as? TimeInterval) ?? 5000
-            print("Started scanning with \(timeout) ms timeout")
+            debugPrint("Started scanning with \(timeout) ms timeout")
             
             Timer.scheduledTimer(withTimeInterval: timeout / 1000, repeats: false) { _ in
                 self.cb?.stopScan()
@@ -276,7 +281,7 @@ public class SwiftSimplebluePlugin: NSObject,
         
         var array = Array<UInt8>(repeating: 0, count: data.count/MemoryLayout<UInt8>.stride)
         _ = array.withUnsafeMutableBytes { data.copyBytes(to: $0) }
-        print(">>>   \(array)")
+        debugPrint(">>>   \(array)")
         
         
         let characteristics = self.characteristics[device.identifier.uuidString]
@@ -322,6 +327,12 @@ public class SwiftSimplebluePlugin: NSObject,
             disconnect(call, args, result)
         } else if (call.method.elementsEqual("write")) {
             write(call, args, result)
+        }
+    }
+    
+    func debugPrint(_ message: String) {
+        if (debugLog) {
+            print(message)
         }
     }
 }

@@ -72,8 +72,6 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
     final device = _deviceFromJson(data["device"] as Map);
     final payload = data["bytes"] as List;
 
-    print("Received Data: $payload [$device]");
-
     _dataStreamControllers[device.uuid]?.add((payload).map((e) => e as int).toList());
   }
 

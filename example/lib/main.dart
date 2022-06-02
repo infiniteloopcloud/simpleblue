@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:simpleblue/model/bluetooth_device.dart';
 import 'package:simpleblue/simpleblue.dart';
@@ -45,12 +46,29 @@ class _MyAppState extends State<MyApp> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      //_simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: 5000);
+      scan();
     });
 
     _simplebluePlugin.getDevices().then((value) => setState(() {
-      devices = value;
-    }));
+          devices = value;
+        }));
+  }
+
+  void scan() async {
+    final isBluetoothGranted = (await Permission.bluetooth.status) == PermissionStatus.granted ||
+        (await Permission.bluetooth.request()) == PermissionStatus.granted;
+
+    if (isBluetoothGranted) {
+      print("Bluetooth permission granted");
+
+      final isLocationGranted = (await Permission.location.status) == PermissionStatus.granted ||
+          (await Permission.location.request()) == PermissionStatus.granted;
+
+      if (isLocationGranted) {
+        print("Location permission granted");
+        _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout);
+      }
+    }
   }
 
   var devices = <BluetoothDevice>[];
@@ -66,15 +84,16 @@ class _MyAppState extends State<MyApp> {
           TextButton(
               child: Text('Scan Devices'),
               onPressed: () {
-                _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout);
+                scan();
               }),
           Expanded(
             child: StreamBuilder<List<BluetoothDevice>>(
                 stream: _simplebluePlugin.listenDevices(),
                 builder: (_, snap) {
-                  final devices = snap.data ?? [];
+                  final deviceSet = (snap.data ?? []).toSet();
+                  deviceSet.addAll(this.devices);
 
-                  devices.addAll(this.devices);
+                  final devices = deviceSet.toList();
 
                   return ListView.builder(
                       itemCount: devices.length,
