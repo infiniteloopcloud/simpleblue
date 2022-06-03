@@ -332,6 +332,8 @@ class SimplebluePlugin : FlutterPlugin,
         }
 
         fun write(bytes: ByteArray) {
+            Log.d(TAG, ">>>   ${bytes.joinToString { it.toUByte().toString() }}")
+
             try {
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
