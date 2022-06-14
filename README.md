@@ -1,10 +1,15 @@
-# simpleblue
+# Simpleblue
 
+### Features
 
-# Android
+- Supports both Android and iOS.
+- Small codebase, so breaking changes on the underlying system (ex. bluetooth related updates) can be easily upgraded.
+- Easy to use, only a few functions to create a working app.
 
-Add the following permissions to your AndroidManifest.xml file.
-To handle permissions you can use permission_handler package.
+### Android
+
+Add the following permissions to your AndroidManifest.xml file. To handle permissions you can use permission_handler package.
+
 ```
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
@@ -16,7 +21,8 @@ To handle permissions you can use permission_handler package.
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="28" />
 ```
 
-# iOS
+### iOS
+
 Add the following properties to Info.plist in Xcode.
 
 * Privacy - Bluetooth Always Usage Description
@@ -24,7 +30,7 @@ Add the following properties to Info.plist in Xcode.
 
 
 
-# Example
+### Usage
 
 ```
 import 'package:flutter/material.dart';
