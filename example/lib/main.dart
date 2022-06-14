@@ -120,16 +120,16 @@ class _MyAppState extends State<MyApp> {
                               ? Row(
                                   children: [
                                     TextButton(
-                                        child: Text('Connect'),
-                                        onPressed: () {
-                                          _simplebluePlugin
-                                              .write(device.uuid, [2, 1, 0, 1, 0, 1, 0, 0, 3, 3]);
-                                        }),
-                                    TextButton(
                                         child: Text('Write 1'),
                                         onPressed: () {
                                           _simplebluePlugin
-                                              .write(device.uuid, [2, 1, 3, 232, 0, 1, 0, 2, 128, 0, 107, 3]);
+                                              .write(device.uuid, "sample data".codeUnits);
+                                        }),
+                                    TextButton(
+                                        child: Text('Write 2'),
+                                        onPressed: () {
+                                          _simplebluePlugin
+                                              .write(device.uuid, "sample data 2".codeUnits);
                                         })
                                   ],
                                 )

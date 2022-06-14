@@ -62,7 +62,7 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
         {
           _dataStreamControllers.remove(device.uuid);
           device.stream = null;
-          _connectionStreamController.add(null);
+          _connectionStreamController.add(device);
           break;
         }
     }
