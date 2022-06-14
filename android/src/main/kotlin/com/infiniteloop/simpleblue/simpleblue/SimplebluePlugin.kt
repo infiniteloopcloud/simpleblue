@@ -205,10 +205,10 @@ class SimplebluePlugin : FlutterPlugin,
 
     // endregion
 
-    private fun deviceToJson(device: BluetoothDevice) = mapOf(
+    private fun deviceToJson(device: BluetoothDevice, connected: Boolean = false) = mapOf(
         "name" to device.name,
         "uuid" to device.address,
-        "isConnected" to false
+        "isConnected" to connected
     )
 
     private val devices = hashMapOf<String, BluetoothDevice>()
@@ -235,7 +235,7 @@ class SimplebluePlugin : FlutterPlugin,
                                 "type" to "connection",
                                 "data" to mapOf(
                                     "event" to "connected",
-                                    "device" to deviceToJson(device)
+                                    "device" to deviceToJson(device, true)
                                 )
                             )
                         )
