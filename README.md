@@ -32,7 +32,7 @@ Add the following properties to Info.plist in Xcode.
 
 ### Usage
 
-```
+```dart
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -186,5 +186,4 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-
 ```
