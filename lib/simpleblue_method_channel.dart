@@ -8,7 +8,7 @@ import 'simpleblue_platform_interface.dart';
 
 /// An implementation of [SimplebluePlatform] that uses method channels.
 class MethodChannelSimpleblue extends SimplebluePlatform {
-  final _scanningStreamController = StreamController<List<BluetoothDevice>>();
+  var _scanningStreamController = StreamController<List<BluetoothDevice>>();
   final _connectionStreamController = StreamController<BluetoothDevice?>();
 
   final _dataStreamControllers = <String, StreamController<List<int>>>{};
@@ -21,9 +21,12 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
 
   MethodChannelSimpleblue() {
     _scanningEventChannel.receiveBroadcastStream().map((event) => event as Map).listen((event) {
-      // debugPrint('OnNewPlatformEvent: $event');
+      debugPrint('OnNewPlatformEvent: $event');
 
       switch (event["type"]) {
+        case "scanningState":
+          _onScanningStateEvent(event["data"] as bool);
+          break;
         case "scanning":
           _onScanningEvent(event["data"] as List);
           break;
@@ -35,6 +38,13 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
           break;
       }
     });
+  }
+
+  _onScanningStateEvent(bool event) async {
+    if (!event) {
+      debugPrint("Closing ScanningStreamController");
+      await _scanningStreamController.close();
+    }
   }
 
   _onScanningEvent(List data) {
@@ -82,14 +92,17 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
   }
 
   @override
-  Future scanDevices({String? serviceUUID, int timeout = 10000}) {
-    return methodChannel.invokeMethod(
+  Stream<List<BluetoothDevice>> scanDevices({String? serviceUUID, int timeout = 10000}) {
+    methodChannel.invokeMethod(
         'scanDevices', {'timeout': timeout, if (serviceUUID != null) 'serviceUUID': serviceUUID});
+
+    _scanningStreamController = StreamController<List<BluetoothDevice>>();
+    return _scanningStreamController.stream;
   }
 
   @override
-  Stream<List<BluetoothDevice>> listenDevices() {
-    return _scanningStreamController.stream;
+  Future stopScanning() {
+    return methodChannel.invokeMethod('stopScanning');
   }
 
   @override

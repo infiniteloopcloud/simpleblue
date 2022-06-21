@@ -94,7 +94,14 @@ class SimplebluePlugin : FlutterPlugin,
                     )
                 }
 
-                bluetoothAdapter?.startDiscovery()
+                if (bluetoothAdapter?.isDiscovering != true) {
+                    bluetoothAdapter?.startDiscovery()
+                }
+            }
+            "stopScanning" -> {
+                if (bluetoothAdapter?.isDiscovering == true) {
+                    bluetoothAdapter?.cancelDiscovery()
+                }
             }
             "connect" -> {
                 (call.arguments as? Map<*, *>)?.let { args ->
@@ -221,9 +228,23 @@ class SimplebluePlugin : FlutterPlugin,
             when (intent.action) {
                 BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
                     Log.d(TAG, "Bluetooth Discovery started")
+
+                    eventSink?.success(
+                        mapOf(
+                            "type" to "scanningState",
+                            "data" to true
+                        )
+                    )
                 }
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     Log.d(TAG, "Bluetooth Discovery finished")
+
+                    eventSink?.success(
+                        mapOf(
+                            "type" to "scanningState",
+                            "data" to false
+                        )
+                    )
                 }
                 BluetoothDevice.ACTION_ACL_CONNECTED -> {
                     (intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice)?.let { device ->

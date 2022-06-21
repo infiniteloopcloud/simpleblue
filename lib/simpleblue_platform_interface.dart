@@ -28,12 +28,12 @@ abstract class SimplebluePlatform extends PlatformInterface {
     throw UnimplementedError('getDevices() has not been implemented.');
   }
 
-  Future scanDevices({String? serviceUUID, int timeout = 10000}) {
+  Stream<List<BluetoothDevice>> scanDevices({String? serviceUUID, int timeout = 10000}) {
     throw UnimplementedError('scanDevices() has not been implemented.');
   }
 
-  Stream<List<BluetoothDevice>> listenDevices() {
-    throw UnimplementedError('listenDevices() has not been implemented.');
+  Future stopScanning() {
+    throw UnimplementedError('stopScanning() has not been implemented.');
   }
 
   Future connect(String uuid) {
