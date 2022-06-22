@@ -42,6 +42,7 @@ class SimplebluePlugin : FlutterPlugin,
 
     lateinit var bluetoothManager: BluetoothManager
     var bluetoothAdapter: BluetoothAdapter? = null
+    var serviceUUID: String? = null
 
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
 
@@ -83,6 +84,14 @@ class SimplebluePlugin : FlutterPlugin,
                 })
             }
             "scanDevices" -> {
+                Log.d(TAG, call.arguments.toString())
+
+                (call.arguments as? Map<*, *>)?.let { args ->
+                    (args["serviceUUID"] as? String)?.let { uuid ->
+                        serviceUUID = uuid
+                    }
+                }
+
                 for (action in arrayOf(
                     BluetoothAdapter.ACTION_STATE_CHANGED,
                     BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED,
@@ -220,7 +229,7 @@ class SimplebluePlugin : FlutterPlugin,
     }
 
     override fun onCancel(arguments: Any?) {
-        eventSink?.endOfStream();
+        eventSink?.endOfStream()
     }
 
     // endregion
@@ -285,21 +294,23 @@ class SimplebluePlugin : FlutterPlugin,
                         val deviceName = device.name ?: intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
                         val deviceHardwareAddress = device.address // MAC address
 
-                        if (deviceName == null) return
-                        if (devices[deviceHardwareAddress] != null) return
+                        if (serviceUUID == null || device.uuids == null || device.uuids!!.any { it.uuid.toString() == serviceUUID }) {
+                            if (deviceName == null) return
+                            if (devices[deviceHardwareAddress] != null) return
 
-                        devices[deviceHardwareAddress] = device
+                            devices[deviceHardwareAddress] = device
 
-                        Log.d(TAG, "Device Found: $deviceName")
+                            Log.d(TAG, "Device Found: $deviceName")
 
-                        eventSink?.success(
-                            mapOf(
-                                "type" to "scanning",
-                                "data" to devices.values.map {
-                                    deviceToJson(it)
-                                }.toList()
+                            eventSink?.success(
+                                mapOf(
+                                    "type" to "scanning",
+                                    "data" to devices.values.map {
+                                        deviceToJson(it)
+                                    }.toList()
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -318,7 +329,7 @@ class SimplebluePlugin : FlutterPlugin,
         private lateinit var mmBuffer: ByteArray // mmBuffer store for the stream
 
 
-        public override fun run() {
+        override fun run() {
             mmSocket?.let { socket ->
                 // Connect to the remote device through the socket. This call blocks
                 // until it succeeds or throws an exception.
