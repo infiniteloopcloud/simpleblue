@@ -75,7 +75,12 @@ class SimplebluePlugin : FlutterPlugin,
 
         when (call.method) {
             "getDevices" -> {
-                result.success(bluetoothAdapter?.bondedDevices?.map { deviceToJson(it) })
+                val bondedDevices = bluetoothAdapter?.bondedDevices
+                val connectedDevices = bluetoothManager.getConnectedDevices(BluetoothProfile.GATT)
+                result.success(bondedDevices?.map { bonded -> deviceToJson(bonded,
+                    connectedDevices.any { connected -> connected.address == bonded.address }
+                )
+                })
             }
             "scanDevices" -> {
                 for (action in arrayOf(
@@ -107,8 +112,11 @@ class SimplebluePlugin : FlutterPlugin,
                 (call.arguments as? Map<*, *>)?.let { args ->
                     (args["uuid"] as? String)?.let { uuid ->
                         bluetoothAdapter?.getRemoteDevice(uuid)?.let {
-                            connectToDevice(it)
-                            result.success(0)
+                            if (connectToDevice(it)) {
+                                result.success(0)
+                            } else {
+                                result.success(-1)
+                            }
                             return
                         }
                     }
@@ -133,7 +141,6 @@ class SimplebluePlugin : FlutterPlugin,
                             )
 
                             result.success(0)
-
 
                             return
                         }
@@ -161,7 +168,7 @@ class SimplebluePlugin : FlutterPlugin,
         }
     }
 
-    private fun connectToDevice(device: BluetoothDevice) {
+    private fun connectToDevice(device: BluetoothDevice): Boolean {
         Log.d(TAG, "Connecting to $device")
 
         if (bluetoothAdapter?.isDiscovering == true) {
@@ -171,7 +178,13 @@ class SimplebluePlugin : FlutterPlugin,
         val connection = ConnectThread(this, device)
         connections[device.address] = connection
 
-        connection.run()
+        try {
+            connection.run()
+        } catch (exception: Exception) {
+            return false
+        }
+
+        return true
     }
 
 
@@ -267,12 +280,9 @@ class SimplebluePlugin : FlutterPlugin,
                         )
                     }
                 }
-                BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
-
-                }
                 BluetoothDevice.ACTION_FOUND -> {
                     (intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice)?.let { device ->
-                        val deviceName = device.name
+                        val deviceName = device.name ?: intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
                         val deviceHardwareAddress = device.address // MAC address
 
                         if (deviceName == null) return
