@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -59,13 +61,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void scan() async {
-    final isBluetoothGranted = (await Permission.bluetooth.status) == PermissionStatus.granted ||
+    final isBluetoothGranted = Platform.isIOS || (await Permission.bluetooth.status) == PermissionStatus.granted ||
         (await Permission.bluetooth.request()) == PermissionStatus.granted;
 
     if (isBluetoothGranted) {
       print("Bluetooth permission granted");
 
-      final isLocationGranted = (await Permission.location.status) == PermissionStatus.granted ||
+      final isLocationGranted = Platform.isIOS || (await Permission.location.status) == PermissionStatus.granted ||
           (await Permission.location.request()) == PermissionStatus.granted;
 
       if (isLocationGranted) {

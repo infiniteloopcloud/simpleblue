@@ -63,7 +63,7 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
           _connectionStreamController.add(device);
           break;
         }
-      case "failedToConnect":
+      case "connectionFailed":
         {
           _connectionStreamController.addError(Error());
           break;
