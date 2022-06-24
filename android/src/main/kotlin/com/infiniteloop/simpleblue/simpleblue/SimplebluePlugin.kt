@@ -108,9 +108,11 @@ class SimplebluePlugin : FlutterPlugin,
                     )
                 }
 
-                if (bluetoothAdapter?.isDiscovering != true) {
-                    bluetoothAdapter?.startDiscovery()
+                if (bluetoothAdapter?.isDiscovering == true) {
+                    bluetoothAdapter?.cancelDiscovery()
                 }
+
+                bluetoothAdapter?.cancelDiscovery()
             }
             "stopScanning" -> {
                 if (bluetoothAdapter?.isDiscovering == true) {
