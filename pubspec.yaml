@@ -1,7 +1,7 @@
 name: simpleblue
-description: A new Flutter project.
+description: A simple package you can handle bluetooth devices with.
 version: 0.1.0
-homepage:
+repository: https://github.com/infiniteloopcloud/simpleblue
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
@@ -35,7 +35,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.infiniteloop.simpleblue.simpleblue
+        package: cloud.infiniteloop.simpleblue.simpleblue
         pluginClass: SimplebluePlugin
       ios:
         pluginClass: SimplebluePlugin
