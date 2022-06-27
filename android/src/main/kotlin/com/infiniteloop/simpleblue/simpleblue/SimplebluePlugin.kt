@@ -2,11 +2,7 @@ package com.infiniteloop.simpleblue.simpleblue
 
 import android.bluetooth.*
 import android.content.*
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
-import android.provider.Settings.Global.putString
+import android.os.*
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat.getSystemService
@@ -77,10 +73,33 @@ class SimplebluePlugin : FlutterPlugin,
         when (call.method) {
             "getDevices" -> {
                 val bondedDevices = bluetoothAdapter?.bondedDevices
-                val connectedDevices = bluetoothManager.getConnectedDevices(BluetoothProfile.GATT)
-                result.success(bondedDevices?.map { bonded -> deviceToJson(bonded,
-                    connectedDevices.any { connected -> connected.address == bonded.address }
+
+
+                val profiles = arrayListOf(
+                    BluetoothProfile.HEADSET,
+                    BluetoothProfile.A2DP,
+                    BluetoothProfile.GATT,
+                    BluetoothProfile.GATT_SERVER,
                 )
+
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    profiles.add(BluetoothProfile.SAP)
+                    profiles.add(BluetoothProfile.HID_DEVICE)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    profiles.add(BluetoothProfile.HEARING_AID)
+                }
+
+                val connectedDevices = arrayListOf<BluetoothDevice>()
+                for (profile in profiles) {
+                    connectedDevices.addAll(bluetoothManager.getConnectedDevices(profile))
+                }
+
+                result.success(bondedDevices?.map { bonded ->
+                    deviceToJson(bonded,
+                        connectedDevices.any { connected -> connected.address == bonded.address }
+                    )
                 })
             }
             "scanDevices" -> {
@@ -192,6 +211,7 @@ class SimplebluePlugin : FlutterPlugin,
         try {
             connection.run()
         } catch (exception: Exception) {
+            Log.d(TAG, exception.localizedMessage ?: exception.toString())
             return false
         }
 
@@ -293,7 +313,8 @@ class SimplebluePlugin : FlutterPlugin,
                 }
                 BluetoothDevice.ACTION_FOUND -> {
                     (intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice)?.let { device ->
-                        val deviceName = device.name ?: intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
+                        val deviceName =
+                            device.name ?: intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
                         val deviceHardwareAddress = device.address // MAC address
 
                         if (serviceUUID == null || device.uuids == null || device.uuids!!.any { it.uuid.toString() == serviceUUID }) {
