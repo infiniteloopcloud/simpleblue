@@ -1,6 +1,6 @@
 name: simpleblue
 description: A simple package you can handle bluetooth devices with.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/infiniteloopcloud/simpleblue
 
 environment:
