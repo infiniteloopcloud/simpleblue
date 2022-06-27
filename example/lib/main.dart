@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -21,7 +23,7 @@ const scanTimeout = 15000;
 class _MyAppState extends State<MyApp> {
   final _simplebluePlugin = Simpleblue();
 
-  BluetoothDevice? _connectedDevice;
+  var devices = <String, BluetoothDevice>{};
 
   String receivedData = '';
 
@@ -32,14 +34,16 @@ class _MyAppState extends State<MyApp> {
     _simplebluePlugin.listenConnectedDevice().listen((connectedDevice) {
       debugPrint("Connected device: $connectedDevice");
 
+      if (connectedDevice != null) {
+        setState(() {
+          devices[connectedDevice.uuid] = connectedDevice;
+        });
+      }
+
       connectedDevice?.stream?.listen((received) {
         setState(() {
           receivedData += "${DateTime.now().toString()}: $received\n";
         });
-      });
-
-      setState(() {
-        _connectedDevice = connectedDevice;
       });
     }).onError((err) {
       debugPrint(err);
@@ -50,28 +54,34 @@ class _MyAppState extends State<MyApp> {
     });
 
     _simplebluePlugin.getDevices().then((value) => setState(() {
-          devices = value;
-        }));
+      for (var device in value) {
+        devices[device.uuid] = device;
+      }
+    }));
   }
 
   void scan() async {
-    final isBluetoothGranted = (await Permission.bluetooth.status) == PermissionStatus.granted ||
+    final isBluetoothGranted = Platform.isIOS || (await Permission.bluetooth.status) == PermissionStatus.granted ||
         (await Permission.bluetooth.request()) == PermissionStatus.granted;
 
     if (isBluetoothGranted) {
       print("Bluetooth permission granted");
 
-      final isLocationGranted = (await Permission.location.status) == PermissionStatus.granted ||
+      final isLocationGranted = Platform.isIOS || (await Permission.location.status) == PermissionStatus.granted ||
           (await Permission.location.request()) == PermissionStatus.granted;
 
       if (isLocationGranted) {
         print("Location permission granted");
-        _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout);
+        _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout).listen((event) {
+          setState(() {
+            for (var device in event) {
+              devices[device.uuid] = device;
+            }
+          });
+        });
       }
     }
   }
-
-  var devices = <BluetoothDevice>[];
 
   @override
   Widget build(BuildContext context) {
@@ -82,61 +92,23 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Column(children: [
           TextButton(
+              child: Text('Get Devices'),
+              onPressed: () {
+                _simplebluePlugin.getDevices().then((value) {
+                  setState(() {
+                    for (var device in value) {
+                      devices[device.uuid] = device;
+                    }
+                  });
+                });
+              }),
+          TextButton(
               child: Text('Scan Devices'),
               onPressed: () {
                 scan();
               }),
           Expanded(
-            child: StreamBuilder<List<BluetoothDevice>>(
-                stream: _simplebluePlugin.listenDevices(),
-                builder: (_, snap) {
-                  final deviceSet = (snap.data ?? []).toSet();
-                  deviceSet.addAll(this.devices);
-
-                  final devices = deviceSet.toList();
-
-                  return ListView.builder(
-                      itemCount: devices.length,
-                      itemBuilder: (context, index) {
-                        final device = devices[index];
-                        final isConnected = _connectedDevice == device;
-
-                        return ListTile(
-                          onTap: () {
-                            if (isConnected) {
-                              _simplebluePlugin.disconnect(device.uuid);
-                            } else {
-                              _simplebluePlugin.connect(device.uuid);
-                            }
-                          },
-                          leading: isConnected
-                              ? Icon(Icons.bluetooth_connected, color: Colors.blue)
-                              : Icon(
-                                  Icons.bluetooth,
-                                  color: Colors.grey.shade300,
-                                ),
-                          title: Text('${device.name ?? 'No name'}\n${device.uuid}'),
-                          subtitle: isConnected
-                              ? Row(
-                                  children: [
-                                    TextButton(
-                                        child: Text('Write 1'),
-                                        onPressed: () {
-                                          _simplebluePlugin
-                                              .write(device.uuid, "sample data".codeUnits);
-                                        }),
-                                    TextButton(
-                                        child: Text('Write 2'),
-                                        onPressed: () {
-                                          _simplebluePlugin
-                                              .write(device.uuid, "sample data 2".codeUnits);
-                                        })
-                                  ],
-                                )
-                              : null,
-                        );
-                      });
-                }),
+            child: buildDevices(),
           ),
           SizedBox(
               height: 200,
@@ -149,5 +121,58 @@ class _MyAppState extends State<MyApp> {
         ]),
       ),
     );
+  }
+
+  final _connectingUUIDs = <String>[];
+
+  Widget buildDevices() {
+    final devList = devices.values.toList();
+    return ListView.builder(
+        itemCount: devList.length,
+        itemBuilder: (context, index) {
+          final device = devList[index];
+
+          return ListTile(
+            onTap: () {
+              if (device.isConnected) {
+                _simplebluePlugin.disconnect(device.uuid);
+              } else {
+                setState(() {
+                  _connectingUUIDs.add(device.uuid);
+                });
+                _simplebluePlugin.connect(device.uuid).then((value) {
+                  setState(() {
+                    _connectingUUIDs.remove(device.uuid);
+                  });
+                });
+              }
+            },
+            leading: _connectingUUIDs.contains(device.uuid)
+                ? Icon(Icons.bluetooth, color: Colors.orange)
+                : (device.isConnected
+                    ? Icon(Icons.bluetooth_connected, color: Colors.blue)
+                    : Icon(
+                        Icons.bluetooth,
+                        color: Colors.grey.shade300,
+                      )),
+            title: Text('${device.name ?? 'No name'}\n${device.uuid}'),
+            subtitle: device.isConnected
+                ? Row(
+                    children: [
+                      TextButton(
+                          child: Text('Write 1'),
+                          onPressed: () {
+                            _simplebluePlugin.write(device.uuid, "sample data".codeUnits);
+                          }),
+                      TextButton(
+                          child: Text('Write 2'),
+                          onPressed: () {
+                            _simplebluePlugin.write(device.uuid, "sample data 2".codeUnits);
+                          })
+                    ],
+                  )
+                : null,
+          );
+        });
   }
 }

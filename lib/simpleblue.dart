@@ -7,12 +7,12 @@ class Simpleblue {
     return SimplebluePlatform.instance.getDevices();
   }
 
-  Future scanDevices({String? serviceUUID, int timeout = 10000}) {
+  Stream<List<BluetoothDevice>> scanDevices({String? serviceUUID, int timeout = 10000}) {
     return SimplebluePlatform.instance.scanDevices(serviceUUID: serviceUUID, timeout: timeout);
   }
 
-  Stream<List<BluetoothDevice>> listenDevices() {
-    return SimplebluePlatform.instance.listenDevices();
+  Future stopScanning() {
+    return SimplebluePlatform.instance.stopScanning();
   }
 
   Future connect(String uuid) {

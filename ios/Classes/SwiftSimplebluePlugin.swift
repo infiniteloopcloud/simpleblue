@@ -60,6 +60,9 @@ public class SwiftSimplebluePlugin: NSObject,
     }
     
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        _connectResult?(nil)
+        _connectResult = nil
+        
         if (eventSink != nil) {
             eventSink?([
                 "type": "connection",
@@ -79,11 +82,14 @@ public class SwiftSimplebluePlugin: NSObject,
     }
     
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        _connectResult?(error)
+        _connectResult = nil
+        
         if (eventSink != nil) {
             eventSink?([
                 "type": "connection",
                 "data": [
-                    "event": "failedToConnect",
+                    "event": "connectionFailed",
                     "error": error?.localizedDescription,
                     "device": convertDeviceToJson(peripheral)
                 ]
@@ -195,6 +201,7 @@ public class SwiftSimplebluePlugin: NSObject,
     // Methods START
     
     private func getDevices(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
+        
         result(devices.values.map({ device in convertDeviceToJson(device) }))
     }
     
@@ -225,18 +232,34 @@ public class SwiftSimplebluePlugin: NSObject,
             
             cb.scanForPeripherals(withServices: cbuuids)
             
+            eventSink?([
+                "type": "scanningState",
+                "data": true
+            ])
+            
             let timeout = (args["timeout"] as? TimeInterval) ?? 5000
             debugPrint("Started scanning with \(timeout) ms timeout")
             
             Timer.scheduledTimer(withTimeInterval: timeout / 1000, repeats: false) { _ in
                 self.cb?.stopScan()
+                
+                self.eventSink?([
+                    "type": "scanningState",
+                    "data": false
+                ])
             }
         }
     }
     
+    var _connectResult: FlutterResult? = nil
+    
     private func connect(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
         if let uuid = args["uuid"] as? String {
             if let device = devices[uuid] {
+                debugPrint("\(NSDate().timeIntervalSince1970) Connect to Device \(device.identifier.uuidString)")
+                
+                _connectResult = result
+                
                 cb?.connect(device)
                 
                 device.delegate = self
@@ -315,6 +338,8 @@ public class SwiftSimplebluePlugin: NSObject,
     
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        debugPrint("Received method call: \(call.method)")
+        
         let args = call.arguments as? NSDictionary ?? [:]
         
         if (call.method.elementsEqual("getDevices")) {

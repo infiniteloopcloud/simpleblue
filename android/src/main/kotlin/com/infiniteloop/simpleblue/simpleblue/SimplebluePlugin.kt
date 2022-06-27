@@ -2,11 +2,7 @@ package com.infiniteloop.simpleblue.simpleblue
 
 import android.bluetooth.*
 import android.content.*
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
-import android.provider.Settings.Global.putString
+import android.os.*
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat.getSystemService
@@ -42,6 +38,7 @@ class SimplebluePlugin : FlutterPlugin,
 
     lateinit var bluetoothManager: BluetoothManager
     var bluetoothAdapter: BluetoothAdapter? = null
+    var serviceUUID: String? = null
 
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
 
@@ -75,9 +72,28 @@ class SimplebluePlugin : FlutterPlugin,
 
         when (call.method) {
             "getDevices" -> {
-                result.success(bluetoothAdapter?.bondedDevices?.map { deviceToJson(it) })
+                val bondedDevices = bluetoothAdapter?.bondedDevices
+
+                val connectedDevices = arrayListOf<BluetoothDevice>()
+                for (profile in arrayOf(BluetoothProfile.GATT, BluetoothProfile.GATT_SERVER)) {
+                    connectedDevices.addAll(bluetoothManager.getConnectedDevices(profile))
+                }
+
+                result.success(bondedDevices?.map { bonded ->
+                    deviceToJson(bonded,
+                        connectedDevices.any { connected -> connected.address == bonded.address }
+                    )
+                })
             }
             "scanDevices" -> {
+                Log.d(TAG, call.arguments.toString())
+
+                (call.arguments as? Map<*, *>)?.let { args ->
+                    (args["serviceUUID"] as? String)?.let { uuid ->
+                        serviceUUID = uuid
+                    }
+                }
+
                 for (action in arrayOf(
                     BluetoothAdapter.ACTION_STATE_CHANGED,
                     BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED,
@@ -94,14 +110,26 @@ class SimplebluePlugin : FlutterPlugin,
                     )
                 }
 
-                bluetoothAdapter?.startDiscovery()
+                if (bluetoothAdapter?.isDiscovering == true) {
+                    bluetoothAdapter?.cancelDiscovery()
+                }
+
+                bluetoothAdapter?.cancelDiscovery()
+            }
+            "stopScanning" -> {
+                if (bluetoothAdapter?.isDiscovering == true) {
+                    bluetoothAdapter?.cancelDiscovery()
+                }
             }
             "connect" -> {
                 (call.arguments as? Map<*, *>)?.let { args ->
                     (args["uuid"] as? String)?.let { uuid ->
                         bluetoothAdapter?.getRemoteDevice(uuid)?.let {
-                            connectToDevice(it)
-                            result.success(0)
+                            if (connectToDevice(it)) {
+                                result.success(0)
+                            } else {
+                                result.success(-1)
+                            }
                             return
                         }
                     }
@@ -126,7 +154,6 @@ class SimplebluePlugin : FlutterPlugin,
                             )
 
                             result.success(0)
-
 
                             return
                         }
@@ -154,7 +181,7 @@ class SimplebluePlugin : FlutterPlugin,
         }
     }
 
-    private fun connectToDevice(device: BluetoothDevice) {
+    private fun connectToDevice(device: BluetoothDevice): Boolean {
         Log.d(TAG, "Connecting to $device")
 
         if (bluetoothAdapter?.isDiscovering == true) {
@@ -164,7 +191,14 @@ class SimplebluePlugin : FlutterPlugin,
         val connection = ConnectThread(this, device)
         connections[device.address] = connection
 
-        connection.run()
+        try {
+            connection.run()
+        } catch (exception: Exception) {
+            Log.d(TAG, exception.localizedMessage ?: exception.toString())
+            return false
+        }
+
+        return true
     }
 
 
@@ -200,7 +234,7 @@ class SimplebluePlugin : FlutterPlugin,
     }
 
     override fun onCancel(arguments: Any?) {
-        eventSink?.endOfStream();
+        eventSink?.endOfStream()
     }
 
     // endregion
@@ -221,9 +255,23 @@ class SimplebluePlugin : FlutterPlugin,
             when (intent.action) {
                 BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
                     Log.d(TAG, "Bluetooth Discovery started")
+
+                    eventSink?.success(
+                        mapOf(
+                            "type" to "scanningState",
+                            "data" to true
+                        )
+                    )
                 }
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     Log.d(TAG, "Bluetooth Discovery finished")
+
+                    eventSink?.success(
+                        mapOf(
+                            "type" to "scanningState",
+                            "data" to false
+                        )
+                    )
                 }
                 BluetoothDevice.ACTION_ACL_CONNECTED -> {
                     (intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice)?.let { device ->
@@ -246,29 +294,29 @@ class SimplebluePlugin : FlutterPlugin,
                         )
                     }
                 }
-                BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
-
-                }
                 BluetoothDevice.ACTION_FOUND -> {
                     (intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice)?.let { device ->
-                        val deviceName = device.name
+                        val deviceName =
+                            device.name ?: intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
                         val deviceHardwareAddress = device.address // MAC address
 
-                        if (deviceName == null) return
-                        if (devices[deviceHardwareAddress] != null) return
+                        if (serviceUUID == null || device.uuids == null || device.uuids!!.any { it.uuid.toString() == serviceUUID }) {
+                            if (deviceName == null) return
+                            if (devices[deviceHardwareAddress] != null) return
 
-                        devices[deviceHardwareAddress] = device
+                            devices[deviceHardwareAddress] = device
 
-                        Log.d(TAG, "Device Found: $deviceName")
+                            Log.d(TAG, "Device Found: $deviceName")
 
-                        eventSink?.success(
-                            mapOf(
-                                "type" to "scanning",
-                                "data" to devices.values.map {
-                                    deviceToJson(it)
-                                }.toList()
+                            eventSink?.success(
+                                mapOf(
+                                    "type" to "scanning",
+                                    "data" to devices.values.map {
+                                        deviceToJson(it)
+                                    }.toList()
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -287,7 +335,7 @@ class SimplebluePlugin : FlutterPlugin,
         private lateinit var mmBuffer: ByteArray // mmBuffer store for the stream
 
 
-        public override fun run() {
+        override fun run() {
             mmSocket?.let { socket ->
                 // Connect to the remote device through the socket. This call blocks
                 // until it succeeds or throws an exception.
