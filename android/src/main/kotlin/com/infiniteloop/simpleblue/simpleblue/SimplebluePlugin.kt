@@ -74,25 +74,8 @@ class SimplebluePlugin : FlutterPlugin,
             "getDevices" -> {
                 val bondedDevices = bluetoothAdapter?.bondedDevices
 
-
-                val profiles = arrayListOf(
-                    BluetoothProfile.HEADSET,
-                    BluetoothProfile.A2DP,
-                    BluetoothProfile.GATT,
-                    BluetoothProfile.GATT_SERVER,
-                )
-
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    profiles.add(BluetoothProfile.SAP)
-                    profiles.add(BluetoothProfile.HID_DEVICE)
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    profiles.add(BluetoothProfile.HEARING_AID)
-                }
-
                 val connectedDevices = arrayListOf<BluetoothDevice>()
-                for (profile in profiles) {
+                for (profile in arrayOf(BluetoothProfile.GATT, BluetoothProfile.GATT_SERVER)) {
                     connectedDevices.addAll(bluetoothManager.getConnectedDevices(profile))
                 }
 
