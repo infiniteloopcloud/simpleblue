@@ -35,7 +35,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.infiniteloop.simpleblue.simpleblue
+        package: cloud.infiniteloop.simpleblue.simpleblue
         pluginClass: SimplebluePlugin
       ios:
         pluginClass: SimplebluePlugin

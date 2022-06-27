@@ -1,4 +1,4 @@
-package com.infiniteloop.simpleblue.simpleblue
+package cloud.infiniteloop.simpleblue.simpleblue
 
 import android.bluetooth.*
 import android.content.*

@@ -1,4 +1,4 @@
-group 'com.infiniteloop.simpleblue.simpleblue'
+group 'cloud.infiniteloop.simpleblue.simpleblue'
 version '1.0-SNAPSHOT'
 
 buildscript {
