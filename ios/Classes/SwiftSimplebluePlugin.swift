@@ -271,6 +271,8 @@ public class SwiftSimplebluePlugin: NSObject,
         if let uuid = args["uuid"] as? String {
             if let device = devices[uuid] {
                 cb?.cancelPeripheralConnection(device)
+                device.delegate = nil
+                characteristics.removeValue(forKey: uuid)
             }
         }
     }
@@ -310,7 +312,6 @@ public class SwiftSimplebluePlugin: NSObject,
         let characteristics = self.characteristics[device.identifier.uuidString]
         
         characteristics?.forEach({ c in
-            
             device.writeValue(data as Data, for: c, type: .withResponse)
             
         })
