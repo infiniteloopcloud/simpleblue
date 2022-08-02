@@ -41,7 +41,7 @@ public class SwiftSimplebluePlugin: NSObject,
         if let sink = eventSink {
             sink([
                 "type": "state",
-                "data": central.state
+                "data": central.state.rawValue
             ])
         }
     }
