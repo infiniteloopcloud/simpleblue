@@ -200,8 +200,19 @@ public class SwiftSimplebluePlugin: NSObject,
     
     // Methods START
     
+    private func isTurnedOn(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
+        result(cb?.state == CBManagerState.poweredOn)
+    }
+    
+    private func turnOn(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
+        UIApplication.shared.open(URL(string: "prefs:root=General&path=Bluetooth")!)
+    }
+    
+    private func turnOff(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
+        UIApplication.shared.open(URL(string: "prefs:root=General&path=Bluetooth")!)
+    }
+    
     private func getDevices(_ call: FlutterMethodCall, _ args: NSDictionary, _ result: @escaping FlutterResult) {
-        
         result(devices.values.map({ device in convertDeviceToJson(device) }))
     }
     
@@ -343,7 +354,13 @@ public class SwiftSimplebluePlugin: NSObject,
         
         let args = call.arguments as? NSDictionary ?? [:]
         
-        if (call.method.elementsEqual("getDevices")) {
+        if (call.method.elementsEqual("isTurnedOn")) {
+            
+        } else if (call.method.elementsEqual("turnOn")) {
+            
+        } else if (call.method.elementsEqual("turnOff")) {
+            
+        } else if (call.method.elementsEqual("getDevices")) {
             getDevices(call, args, result)
         } else if (call.method.elementsEqual("scanDevices")) {
             scanDevices(call, args, result)

@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:simpleblue/model/bluetooth_device.dart';
+import 'package:simpleblue/simpleblue_state.dart';
 
 import 'simpleblue_platform_interface.dart';
 
 /// An implementation of [SimplebluePlatform] that uses method channels.
 class MethodChannelSimpleblue extends SimplebluePlatform {
+  final _stateStreamController = StreamController<SimpleblueState>();
   var _scanningStreamController = StreamController<List<BluetoothDevice>>();
   final _connectionStreamController = StreamController<BluetoothDevice?>();
 
@@ -24,6 +26,9 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
       debugPrint('OnNewPlatformEvent: $event');
 
       switch (event["type"]) {
+        case "state":
+          _onStateEvent(event["data"] as int);
+          break;
         case "scanningState":
           _onScanningStateEvent(event["data"] as bool);
           break;
@@ -38,6 +43,10 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
           break;
       }
     });
+  }
+
+  _onStateEvent(int state) {
+    _stateStreamController.add(SimpleblueState.fromInt(state));
   }
 
   _onScanningStateEvent(bool event) async {
@@ -83,6 +92,22 @@ class MethodChannelSimpleblue extends SimplebluePlatform {
     final payload = data["bytes"] as List;
 
     _dataStreamControllers[device.uuid]?.add((payload).map((e) => e as int).toList());
+  }
+
+  Future<bool?> isTurnedOn() {
+    return methodChannel.invokeMethod<bool>('state');
+  }
+
+  Future<bool?> turnOn() {
+    return methodChannel.invokeMethod<bool>('turnOn');
+  }
+
+  Future<bool?> turnOff() {
+    return methodChannel.invokeMethod<bool>('turnOff');
+  }
+
+  Stream<SimpleblueState> listenStateChanges() {
+    return _stateStreamController.stream;
   }
 
   @override

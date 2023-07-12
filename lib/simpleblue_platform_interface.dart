@@ -1,5 +1,6 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:simpleblue/model/bluetooth_device.dart';
+import 'package:simpleblue/simpleblue_state.dart';
 
 import 'simpleblue_method_channel.dart';
 
@@ -22,6 +23,22 @@ abstract class SimplebluePlatform extends PlatformInterface {
   static set instance(SimplebluePlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
+  }
+
+  Future<bool?> isTurnedOn() {
+    throw UnimplementedError('isTurnedOn() has not been implemented.');
+  }
+
+  Future<bool?> turnOn() {
+    throw UnimplementedError('turnOn() has not been implemented.');
+  }
+
+  Future<bool?> turnOff() {
+    throw UnimplementedError('turnOff() has not been implemented.');
+  }
+
+  Stream<SimpleblueState> listenStateChanges() {
+    throw UnimplementedError('listenConnectedDevice() has not been implemented.');
   }
 
   Future<List<BluetoothDevice>> getDevices() {
