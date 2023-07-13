@@ -57,7 +57,8 @@ const scanTimeout = 15000;
 
 class _MyAppState extends State<MyApp> {
   final _simplebluePlugin = Simpleblue();
-
+  
+  bool _isBluetoothTurnedOn = false;
   var devices = <String, BluetoothDevice>{};
 
   String receivedData = '';
@@ -93,6 +94,18 @@ class _MyAppState extends State<MyApp> {
         devices[device.uuid] = device;
       }
     }));
+    
+    _simplebluePlugin.isTurnedOn().then((value) => setState(() {
+      _isBluetoothTurnedOn = value ?? false;
+    }));
+
+    _simplebluePlugin.listenStateChanges().listen((state) {
+      debugPrint('Bluetooth state changed to: $state');
+
+      setState(() {
+        _isBluetoothTurnedOn = state == SimpleblueState.on;
+      });
+    });
   }
 
   void scan() async {
@@ -126,6 +139,18 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Column(children: [
+          if (_isBluetoothTurnedOn)
+            TextButton(
+                child: Text('Turn Off Bluetooth'),
+                onPressed: () {
+                  _simplebluePlugin.turnOff();
+                }),
+          if (!_isBluetoothTurnedOn)
+            TextButton(
+                child: Text('Turn On Bluetooth'),
+                onPressed: () {
+                  _simplebluePlugin.turnOn();
+                }),
           TextButton(
               child: Text('Get Devices'),
               onPressed: () {

@@ -1,8 +1,25 @@
 import 'package:simpleblue/model/bluetooth_device.dart';
+import 'package:simpleblue/simpleblue_state.dart';
 
 import 'simpleblue_platform_interface.dart';
 
 class Simpleblue {
+  Future<bool?> isTurnedOn() {
+    return SimplebluePlatform.instance.isTurnedOn();
+  }
+
+  Future<bool?> turnOn() {
+    return SimplebluePlatform.instance.turnOn();
+  }
+
+  Future<bool?> turnOff() {
+    return SimplebluePlatform.instance.turnOff();
+  }
+
+  Stream<SimpleblueState> listenStateChanges() {
+    return SimplebluePlatform.instance.listenStateChanges();
+  }
+
   Future<List<BluetoothDevice>> getDevices() {
     return SimplebluePlatform.instance.getDevices();
   }

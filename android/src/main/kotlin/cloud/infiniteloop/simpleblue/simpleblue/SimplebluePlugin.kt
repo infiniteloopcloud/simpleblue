@@ -71,6 +71,15 @@ class SimplebluePlugin : FlutterPlugin,
         Log.d(TAG, "android call received: \"${call.method}\"")
 
         when (call.method) {
+            "state" -> {
+                result.success(bluetoothAdapter?.isEnabled())
+            }
+            "turnOn" -> {
+                result.success(bluetoothAdapter?.enable())
+            }
+            "turnOff" -> {
+                result.success(bluetoothAdapter?.disable())
+            }
             "getDevices" -> {
                 val bondedDevices = bluetoothAdapter?.bondedDevices
 
@@ -114,7 +123,7 @@ class SimplebluePlugin : FlutterPlugin,
                     bluetoothAdapter?.cancelDiscovery()
                 }
 
-                bluetoothAdapter?.cancelDiscovery()
+                bluetoothAdapter?.startDiscovery()
             }
             "stopScanning" -> {
                 if (bluetoothAdapter?.isDiscovering == true) {
@@ -253,6 +262,14 @@ class SimplebluePlugin : FlutterPlugin,
             Log.d(TAG, "onReceive $intent\nExtras: ${intent.extras?.keySet()?.joinToString { it }}")
 
             when (intent.action) {
+                BluetoothAdapter.ACTION_STATE_CHANGED -> {
+                    eventSink?.success(
+                        mapOf(
+                            "type" to "state",
+                            "data" to intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0)
+                        )
+                    )
+                }
                 BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
                     Log.d(TAG, "Bluetooth Discovery started")
 

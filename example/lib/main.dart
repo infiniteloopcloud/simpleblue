@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'package:simpleblue/model/bluetooth_device.dart';
 import 'package:simpleblue/simpleblue.dart';
+import 'package:simpleblue/simpleblue_state.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,6 +25,7 @@ const scanTimeout = 15000;
 class _MyAppState extends State<MyApp> {
   final _simplebluePlugin = Simpleblue();
 
+  bool _isBluetoothTurnedOn = false;
   var devices = <String, BluetoothDevice>{};
 
   String receivedData = '';
@@ -54,25 +57,41 @@ class _MyAppState extends State<MyApp> {
     });
 
     _simplebluePlugin.getDevices().then((value) => setState(() {
-      for (var device in value) {
-        devices[device.uuid] = device;
-      }
+          for (var device in value) {
+            devices[device.uuid] = device;
+          }
+        }));
+
+    _simplebluePlugin.isTurnedOn().then((value) => setState(() {
+      _isBluetoothTurnedOn = value ?? false;
     }));
+
+    _simplebluePlugin.listenStateChanges().listen((state) {
+      debugPrint('Bluetooth state changed to: $state');
+
+      setState(() {
+        _isBluetoothTurnedOn = state == SimpleblueState.on;
+      });
+    });
   }
 
   void scan() async {
-    final isBluetoothGranted = Platform.isIOS || (await Permission.bluetooth.status) == PermissionStatus.granted ||
-        (await Permission.bluetooth.request()) == PermissionStatus.granted;
+    final isBluetoothGranted = Platform.isIOS ||
+        (await Permission.bluetoothScan.status) == PermissionStatus.granted ||
+        (await Permission.bluetoothScan.request()) == PermissionStatus.granted;
 
     if (isBluetoothGranted) {
       print("Bluetooth permission granted");
 
-      final isLocationGranted = Platform.isIOS || (await Permission.location.status) == PermissionStatus.granted ||
+      final isLocationGranted = Platform.isIOS ||
+          (await Permission.location.status) == PermissionStatus.granted ||
           (await Permission.location.request()) == PermissionStatus.granted;
 
       if (isLocationGranted) {
         print("Location permission granted");
-        _simplebluePlugin.scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout).listen((event) {
+        _simplebluePlugin
+            .scanDevices(serviceUUID: serviceUUID, timeout: scanTimeout)
+            .listen((event) {
           setState(() {
             for (var device in event) {
               devices[device.uuid] = device;
@@ -91,6 +110,18 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Column(children: [
+          if (_isBluetoothTurnedOn)
+            TextButton(
+                child: Text('Turn Off Bluetooth'),
+                onPressed: () {
+                  _simplebluePlugin.turnOff();
+                }),
+          if (!_isBluetoothTurnedOn)
+            TextButton(
+                child: Text('Turn On Bluetooth'),
+                onPressed: () {
+                  _simplebluePlugin.turnOn();
+                }),
           TextButton(
               child: Text('Get Devices'),
               onPressed: () {
@@ -162,12 +193,14 @@ class _MyAppState extends State<MyApp> {
                       TextButton(
                           child: Text('Write 1'),
                           onPressed: () {
-                            _simplebluePlugin.write(device.uuid, "sample data".codeUnits);
+                            _simplebluePlugin.write(
+                                device.uuid, "sample data".codeUnits);
                           }),
                       TextButton(
                           child: Text('Write 2'),
                           onPressed: () {
-                            _simplebluePlugin.write(device.uuid, "sample data 2".codeUnits);
+                            _simplebluePlugin.write(
+                                device.uuid, "sample data 2".codeUnits);
                           })
                     ],
                   )
